@@ -1,0 +1,33 @@
+# 核心依赖
+langchain>=0.3.0
+langchain-openai>=0.3.23
+langgraph>=0.4.8
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+
+# Web 框架
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# 数据库
+pymongo>=4.0.0
+
+# 数据处理
+pandas>=2.3.0
+numpy>=1.24.0
+
+# 股票数据源
+akshare>=1.17.86
+baostock>=0.8.8
+tushare>=1.4.21
+yfinance>=0.2.63
+
+# 图片处理
+Pillow>=10.0.0
+requests>=2.32.4
+httpx>=0.24.0
+
+# 工具
+rich>=14.0.0
+tqdm>=4.67.1
+
