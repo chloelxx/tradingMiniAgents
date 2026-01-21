@@ -5,7 +5,7 @@ DeepSeek LLM 客户端
 
 import os
 import logging
-from typing import Optional, List
+from typing import Optional, List, AsyncGenerator
 import httpx
 from dotenv import load_dotenv
 
@@ -62,6 +62,12 @@ class DeepSeekClient:
         
         # 创建同步 HTTP 客户端
         self._client = httpx.Client(
+            base_url=self.base_url,
+            timeout=60.0,
+        )
+        
+        # 创建异步 HTTP 客户端（用于流式调用）
+        self._async_client = httpx.AsyncClient(
             base_url=self.base_url,
             timeout=60.0,
         )
@@ -160,6 +166,110 @@ class DeepSeekClient:
             logger.error(f"LLM API 调用发生未知错误: {e}", exc_info=True)
             raise ValueError(f"LLM API 调用发生错误: {str(e)}。请查看日志获取详细信息。")
     
+    async def _chat_stream(self, messages: List[dict]) -> AsyncGenerator[str, None]:
+        """
+        内部方法：调用 Chat Completions API 流式版本
+        
+        Args:
+            messages: 消息列表，格式为 [{"role": "system", "content": "..."}, ...]
+            
+        Yields:
+            模型响应的文本块
+        """
+        if not self.api_key:
+            yield "LLM 未配置（缺少 DEEPSEEK_API_KEY 环境变量），当前为占位回复。"
+            return
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": self.temperature,
+            "stream": True,  # 启用流式输出
+        }
+        
+        # 如果设置了 max_tokens，添加到 payload
+        if self.max_tokens is not None:
+            payload["max_tokens"] = self.max_tokens
+
+        try:
+            # 使用流式请求
+            async with self._async_client.stream(
+                "POST",
+                "/chat/completions",
+                headers=headers,
+                json=payload
+            ) as response:
+                if response.status_code != 200:
+                    error_detail = await response.atext()
+                    logger.error(
+                        f"LLM API 调用失败: status={response.status_code}, "
+                        f"model={self.model}, "
+                        f"error={error_detail}"
+                    )
+                    
+                    if response.status_code == 404 or "model" in error_detail.lower():
+                        raise ValueError(
+                            f"模型 '{self.model}' 不存在或没有访问权限。"
+                        )
+                    
+                    raise ValueError(
+                        f"LLM API 调用失败（状态码: {response.status_code}）。"
+                    )
+                
+                # 处理流式响应
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        data_str = line[6:].strip()
+                        if data_str == "[DONE]":
+                            break
+                        
+                        try:
+                            import json
+                            data = json.loads(data_str)
+                            
+                            if "choices" in data and data["choices"]:
+                                delta = data["choices"][0].get("delta", {})
+                                content = delta.get("content", "")
+                                if content:
+                                    yield content
+                        except (json.JSONDecodeError, KeyError, IndexError):
+                            continue
+                            
+        except httpx.TimeoutException:
+            logger.error("LLM API 调用超时")
+            raise ValueError("LLM API 调用超时，请稍后重试。")
+        except httpx.RequestError as e:
+            logger.error(f"LLM API 网络请求错误: {e}")
+            raise ValueError(f"LLM API 网络请求失败: {str(e)}")
+        except ValueError:
+            raise
+        except Exception as e:
+            logger.error(f"LLM API 流式调用发生错误: {e}", exc_info=True)
+            raise ValueError(f"LLM API 流式调用发生错误: {str(e)}")
+    
+    def analyze_stream(self, prompt: str, system_prompt: Optional[str] = None) -> AsyncGenerator[str, None]:
+        """
+        流式分析文本
+        
+        Args:
+            prompt: 用户提示
+            system_prompt: 系统提示（可选）
+            
+        Yields:
+            分析结果的文本块
+        """
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        
+        return self._chat_stream(messages)
+    
     def invoke(self, messages: List[dict]) -> str:
         """
         调用模型生成响应（兼容旧接口）
@@ -194,6 +304,12 @@ class DeepSeekClient:
         """关闭 HTTP 客户端"""
         if hasattr(self, '_client'):
             self._client.close()
+        if hasattr(self, '_async_client'):
+            import asyncio
+            try:
+                asyncio.get_event_loop().run_until_complete(self._async_client.aclose())
+            except:
+                pass
     
     def __enter__(self):
         """上下文管理器入口"""

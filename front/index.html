@@ -1,29 +1,30 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TradingMiniAgents - 股票分析智能体</title>
-    
+    <link rel="icon" href="./images/image.png" type="image/png">
     <!-- Element Plus CSS -->
     <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
     <!-- Element Plus Icons -->
     <link rel="stylesheet" href="https://unpkg.com/@element-plus/icons-vue/dist/index.css">
-    
+
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -32,41 +33,41 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             padding: 30px;
         }
-        
+
         .header {
             text-align: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 2px solid #f0f0f0;
         }
-        
+
         .header h1 {
             color: #303133;
             font-size: 28px;
             margin-bottom: 10px;
         }
-        
+
         .header p {
             color: #909399;
             font-size: 14px;
         }
-        
+
         .form-section {
             margin-bottom: 30px;
         }
-        
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
             margin-bottom: 20px;
         }
-        
+
         .form-item {
             display: flex;
             flex-direction: column;
         }
-        
+
         .form-item label {
             margin-bottom: 8px;
             color: #606266;
@@ -75,21 +76,21 @@
             align-items: center;
             gap: 5px;
         }
-        
+
         .analyst-section {
             background: #f8f9fa;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
         }
-        
+
         .analyst-options {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 15px;
             margin-top: 15px;
         }
-        
+
         .analyst-item {
             display: flex;
             align-items: center;
@@ -100,23 +101,23 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-        
+
         .analyst-item:hover {
             border-color: #409eff;
             background: #ecf5ff;
         }
-        
+
         .analyst-item.selected {
             border-color: #409eff;
             background: #ecf5ff;
         }
-        
+
         .analyst-item input[type="checkbox"] {
             margin-right: 10px;
             width: 18px;
             height: 18px;
         }
-        
+
         .info-box {
             background: #f0f9ff;
             border: 1px solid #b3d8ff;
@@ -126,7 +127,7 @@
             color: #409eff;
             font-size: 13px;
         }
-        
+
         .success-box {
             background: #f0f9ff;
             border: 1px solid #b3d8ff;
@@ -136,7 +137,7 @@
             color: #67c23a;
             font-size: 13px;
         }
-        
+
         .action-button {
             width: 100%;
             height: 50px;
@@ -144,39 +145,52 @@
             font-weight: 600;
             margin-top: 20px;
         }
-        
+
         .results-section {
             margin-top: 30px;
             padding-top: 30px;
             border-top: 2px solid #f0f0f0;
         }
-        
+
         .result-item {
             background: #f8f9fa;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
         }
-        
+
         .result-item h3 {
             color: #303133;
             margin-bottom: 15px;
             padding-bottom: 10px;
             border-bottom: 2px solid #e4e7ed;
         }
-        
+
         .result-content {
             color: #606266;
             line-height: 1.8;
             white-space: pre-wrap;
+            word-break: break-word;
+            min-height: 20px;
+            animation: fadeIn 0.3s ease-in;
         }
-        
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
             color: #909399;
         }
-        
+
         .depth-indicator {
             text-align: center;
             margin-top: 10px;
@@ -185,6 +199,7 @@
         }
     </style>
 </head>
+
 <body>
     <div id="app">
         <div class="container">
@@ -192,14 +207,16 @@
                 <h1>📊 TradingMiniAgents</h1>
                 <p>简化版股票分析智能体系统</p>
             </div>
-            
+
             <!-- 表单区域 -->
             <el-form :model="form" label-width="120px">
                 <!-- 第一行：市场和股票代码 -->
                 <div class="form-row">
                     <div class="form-item">
                         <label>
-                            <el-icon><Globe /></el-icon>
+                            <el-icon>
+                                <Globe />
+                            </el-icon>
                             选择市场
                         </label>
                         <el-select v-model="form.market" placeholder="请选择市场" style="width: 100%">
@@ -208,166 +225,200 @@
                             <el-option label="美股" value="美股" />
                         </el-select>
                     </div>
-                    
+
                     <div class="form-item">
                         <label>
-                            <el-icon><TrendCharts /></el-icon>
+                            <el-icon>
+                                <TrendCharts />
+                            </el-icon>
                             股票代码
                         </label>
-                        <el-input 
-                            v-model="form.ticker" 
-                            placeholder="请输入股票代码"
-                            clearable
-                        />
+                        <el-input v-model="form.ticker" placeholder="请输入股票代码" clearable />
                     </div>
                 </div>
-                
+
                 <!-- 第二行：分析日期和研究深度 -->
                 <div class="form-row">
                     <div class="form-item">
                         <label>
-                            <el-icon><Calendar /></el-icon>
+                            <el-icon>
+                                <Calendar />
+                            </el-icon>
                             分析日期
                         </label>
-                        <el-date-picker
-                            v-model="form.date"
-                            type="date"
-                            placeholder="选择分析日期"
-                            format="YYYY/MM/DD"
-                            value-format="YYYY-MM-DD"
-                            style="width: 100%"
-                        />
+                        <el-date-picker v-model="form.date" type="date" placeholder="选择分析日期" format="YYYY/MM/DD"
+                            value-format="YYYY-MM-DD" style="width: 100%" />
                     </div>
-                    
+
                     <div class="form-item">
                         <label>
-                            <el-icon><Search /></el-icon>
+                            <el-icon>
+                                <Search />
+                            </el-icon>
                             研究深度
                         </label>
-                        <el-slider
-                            v-model="form.research_depth"
-                            :min="1"
-                            :max="5"
-                            :step="1"
-                            show-stops
-                            show-input
-                        />
+                        <el-slider v-model="form.research_depth" :min="1" :max="5" :step="1" show-stops show-input />
                         <div class="depth-indicator">
                             {{ getDepthText(form.research_depth) }}
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- 分析师选择 -->
                 <div class="form-section">
                     <div class="analyst-section">
                         <h3 style="margin-bottom: 15px; color: #303133;">
-                            <el-icon><User /></el-icon>
+                            <el-icon>
+                                <User />
+                            </el-icon>
                             选择分析师团队
                         </h3>
-                        
+
                         <div class="analyst-options">
-                            <div 
-                                class="analyst-item" 
-                                :class="{ selected: form.analysts.includes('market') }"
-                                @click="toggleAnalyst('market')"
-                            >
-                                <input 
-                                    type="checkbox" 
-                                    :checked="form.analysts.includes('market')"
-                                    @change="toggleAnalyst('market')"
-                                />
-                                <el-icon style="margin-right: 8px; color: #409eff;"><TrendCharts /></el-icon>
+                            <div class="analyst-item" :class="{ selected: form.analysts.includes('market') }"
+                                @click="toggleAnalyst('market')">
+                                <input type="checkbox" :checked="form.analysts.includes('market')"
+                                    @change="toggleAnalyst('market')" />
+                                <el-icon style="margin-right: 8px; color: #409eff;">
+                                    <TrendCharts />
+                                </el-icon>
                                 <span>市场分析师</span>
                             </div>
-                            
-                            <div 
-                                class="analyst-item" 
-                                :class="{ selected: form.analysts.includes('fundamentals') }"
-                                @click="toggleAnalyst('fundamentals')"
-                            >
-                                <input 
-                                    type="checkbox" 
-                                    :checked="form.analysts.includes('fundamentals')"
-                                    @change="toggleAnalyst('fundamentals')"
-                                />
-                                <el-icon style="margin-right: 8px; color: #67c23a;"><Money /></el-icon>
+
+                            <div class="analyst-item" :class="{ selected: form.analysts.includes('fundamentals') }"
+                                @click="toggleAnalyst('fundamentals')">
+                                <input type="checkbox" :checked="form.analysts.includes('fundamentals')"
+                                    @change="toggleAnalyst('fundamentals')" />
+                                <el-icon style="margin-right: 8px; color: #67c23a;">
+                                    <Money />
+                                </el-icon>
                                 <span>基本面分析师</span>
                             </div>
                         </div>
-                        
+
                         <div class="success-box" v-if="form.analysts.length > 0">
-                            <el-icon><Check /></el-icon>
+                            <el-icon>
+                                <Check />
+                            </el-icon>
                             已选择 {{ form.analysts.length }} 个分析师: {{ getAnalystNames() }}
                         </div>
-                        
+
                         <div class="info-box" v-if="form.market === 'A股' && form.analysts.includes('social')">
-                            <el-icon><InfoFilled /></el-icon>
+                            <el-icon>
+                                <InfoFilled />
+                            </el-icon>
                             A股市场暂不支持社交媒体分析, 因为国内数据源限制
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- 确认信息 -->
                 <div class="success-box" v-if="form.ticker">
-                    <el-icon><Check /></el-icon>
+                    <el-icon>
+                        <Check />
+                    </el-icon>
                     已输入股票代码: {{ form.ticker }}
                 </div>
-                
+
+                <!-- 输出模式选择 -->
+                <div class="analyst-section"
+                    style="background: #fff7e6; border: 1px solid #ffe7ba; margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px; color: #ad6800;">
+                        <el-icon>
+                            <Setting />
+                        </el-icon>
+                        输出模式选择
+                    </h3>
+                    <el-radio-group v-model="useStreaming" style="margin-bottom: 10px;">
+                        <el-radio :label="true">
+                            <span style="margin-left: 5px;">
+                                <el-icon style="color: #409eff; margin-right: 5px;">
+                                    <VideoPlay />
+                                </el-icon>
+                                流式输出 (推荐)
+                            </span>
+                        </el-radio>
+                        <el-radio :label="false" style="margin-left: 20px;">
+                            <span style="margin-left: 5px;">
+                                <el-icon style="color: #67c23a; margin-right: 5px;">
+                                    <DocumentCopy />
+                                </el-icon>
+                                同步输出 (一次性)
+                            </span>
+                        </el-radio>
+                    </el-radio-group>
+                    <div class="info-box" style="margin-top: 10px; font-size: 12px;">
+                        <el-icon style="vertical-align: middle;">
+                            <InfoFilled />
+                        </el-icon>
+                        <span style="margin-left: 5px;">
+                            {{ useStreaming ? '流式输出：实时显示分析结果，用户体验更佳' : '同步输出：等待完整结果后一次性显示，兼容性更好' }}
+                        </span>
+                    </div>
+                </div>
+
                 <!-- 开始分析按钮 -->
-                <el-button 
-                    type="primary" 
-                    size="large"
-                    class="action-button"
-                    :loading="loading"
-                    @click="startAnalysis"
-                    :disabled="!canAnalyze"
-                >
-                    <el-icon><Promotion /></el-icon>
+                <el-button type="primary" size="large" class="action-button" :loading="loading" @click="startAnalysis"
+                    :disabled="!canAnalyze">
+                    <el-icon>
+                        <Promotion />
+                    </el-icon>
                     {{ loading ? '分析中...' : '开始分析' }}
                 </el-button>
             </el-form>
-            
+
             <!-- 结果显示区域 -->
             <div class="results-section" v-if="results || loading">
                 <h2 style="margin-bottom: 20px; color: #303133;">分析结果</h2>
-                
-                <div v-if="loading" class="loading">
-                    <el-icon class="is-loading" style="font-size: 32px;"><Loading /></el-icon>
-                    <p style="margin-top: 15px;">正在分析中，请稍候...</p>
-                </div>
-                
-                <div v-else-if="results">
-                    <div class="result-item" v-for="(report, analyst) in results.reports" :key="analyst">
-                        <h3>{{ analyst }}</h3>
+
+                <!-- 实时显示结果（支持流式逐步更新） -->
+                <div v-if="results" style="margin-bottom: 20px;">
+                    <div class="result-item" v-for="(report, analyst) in results" :key="analyst">
+                        <h3>
+                            {{ analyst }}
+                            <el-icon v-if="loading && !streamsCompleted[analyst]" class="is-loading"
+                                style="font-size: 16px; margin-left: 8px;">
+                                <Loading />
+                            </el-icon>
+                            <el-icon v-else-if="streamsCompleted[analyst]"
+                                style="font-size: 16px; margin-left: 8px; color: #67c23a;">
+                                <SuccessFilled />
+                            </el-icon>
+                        </h3>
                         <div class="result-content">{{ report }}</div>
                     </div>
-                    
-                    <div class="result-item" v-if="results.image_analysis">
-                        <h3>图片分析</h3>
-                        <div class="result-content">{{ results.image_analysis }}</div>
-                    </div>
                 </div>
-                
-                <div v-if="error" style="background: #fef0f0; border: 1px solid #fbc4c4; border-radius: 6px; padding: 15px; color: #f56c6c; margin-top: 20px;">
-                    <el-icon><Warning /></el-icon>
+
+                <!-- 加载中提示（仅在完全没有结果时显示） -->
+                <div v-if="loading && !results" class="loading">
+                    <el-icon class="is-loading" style="font-size: 32px;">
+                        <Loading />
+                    </el-icon>
+                    <p style="margin-top: 15px;">{{ loadingMessage }}</p>
+                </div>
+
+                <div v-if="error"
+                    style="background: #fef0f0; border: 1px solid #fbc4c4; border-radius: 6px; padding: 15px; color: #f56c6c; margin-top: 20px;">
+                    <el-icon>
+                        <Warning />
+                    </el-icon>
                     {{ error }}
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Element Plus -->
     <script src="https://unpkg.com/element-plus/dist/index.full.js"></script>
     <!-- Element Plus Icons -->
     <script src="https://unpkg.com/@element-plus/icons-vue/dist/index.iife.js"></script>
-    
+
     <script>
         const { createApp } = Vue;
         const { ElMessage } = ElementPlus;
-        
+
         createApp({
             data() {
                 return {
@@ -379,9 +430,12 @@
                         analysts: ['market', 'fundamentals']
                     },
                     loading: false,
+                    loadingMessage: '正在分析中，请稍候...',
                     results: null,
                     error: null,
-                    apiBaseUrl: ''  // 使用相对路径，因为前后端在同一端口
+                    apiBaseUrl: '',  // 使用相对路径，因为前后端在同一端口
+                    useStreaming: true,  // 是否使用流式输出
+                    streamsCompleted: {}  // 跟踪各分析师的完成状态
                 };
             },
             computed: {
@@ -422,38 +476,30 @@
                         ElMessage.warning('请填写完整信息');
                         return;
                     }
-                    
+
                     this.loading = true;
                     this.error = null;
-                    this.results = null;
-                    
+                    this.results = {};  // 初始化为空对象，支持逐步更新
+                    this.streamsCompleted = {};  // 重置完成状态
+                    this.loadingMessage = '正在分析中，请稍候...';
+
                     try {
-                        const response = await fetch(`${this.apiBaseUrl}/api/analyze`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                ticker: this.form.ticker,
-                                date: this.form.date,
-                                market: this.form.market,
-                                analysts: this.form.analysts,
-                                research_depth: this.form.research_depth
-                            })
-                        });
-                        
-                        const data = await response.json();
-                        
-                        if (!response.ok) {
-                            throw new Error(data.detail || '分析失败');
-                        }
-                        
-                        if (data.success) {
-                            this.results = data.data;
-                            ElMessage.success('分析完成！');
+                        const requestData = {
+                            ticker: this.form.ticker,
+                            date: this.form.date,
+                            market: this.form.market,
+                            analysts: this.form.analysts,
+                            research_depth: this.form.research_depth
+                        };
+
+                        // 根据模式选择不同的处理方式
+                        if (this.useStreaming) {
+                            await this.analyzeStream(requestData);
                         } else {
-                            throw new Error(data.message || '分析失败');
+                            await this.analyzeSyncV1(requestData);
                         }
+
+                        ElMessage.success('分析完成！');
                     } catch (error) {
                         console.error('分析错误:', error);
                         this.error = error.message || '分析失败，请检查网络连接和服务器状态';
@@ -462,11 +508,123 @@
                         this.loading = false;
                     }
                 },
+                async analyzeStream(requestData) {
+                    /**
+                     * 流式分析 - 实时显示结果
+                     */
+                    const url = `${this.apiBaseUrl}/api/analyze-stream`;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    if (!this.results) {
+                        this.results = {};
+                    }
+
+                    let currentAnalyst = null;
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n\n');
+                        buffer = lines[lines.length - 1];
+
+                        for (let i = 0; i < lines.length - 1; i++) {
+                            const line = lines[i].trim();
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const jsonStr = line.slice(6);
+
+                                    // 验证是否为有效的 JSON
+                                    if (!jsonStr || jsonStr === '') {
+                                        continue;
+                                    }
+
+                                    const data = JSON.parse(jsonStr);
+                                    if (data.event === 'start') {
+                                        this.loadingMessage = '✨ 分析开始...';
+                                    } else if (data.event === 'analyst_start') {
+                                        currentAnalyst = data.analyst;
+                                        this.results[currentAnalyst] = '';
+                                        this.$set(this.streamsCompleted, currentAnalyst, false);
+                                        this.loadingMessage = `📊 ${currentAnalyst}分析中...`;
+                                    } else if (data.event === 'content') {
+                                        if (currentAnalyst && data.chunk) {
+                                            this.results[currentAnalyst] += data.chunk;
+                                            this.$set(this.results, currentAnalyst, this.results[currentAnalyst]);
+                                        }
+                                    } else if (data.event === 'analyst_end') {
+                                        if (currentAnalyst) {
+                                            this.$set(this.streamsCompleted, currentAnalyst, true);
+                                        }
+                                        this.loadingMessage = `✅ ${data.analyst} 分析完成`;
+                                    } else if (data.event === 'complete') {
+                                        this.loadingMessage = '✨ 分析完成！';
+                                    } else if (data.event === 'error') {
+                                        throw new Error(data.message || '分析出错');
+                                    }
+                                } catch (e) {
+                                    console.error('解析 SSE 消息失败:', line, e);
+                                    // 继续处理下一条消息，不中断流程
+                                }
+                            }
+                        }
+                    }
+
+                    // 处理最后的数据
+                    if (buffer.trim().startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(buffer.trim().slice(6));
+                            if (data.event === 'content' && currentAnalyst) {
+                                this.results[currentAnalyst] += data.chunk;
+                            }
+                        } catch (e) {
+                            console.error('解析最后的 SSE 消息失败:', e);
+                        }
+                    }
+                },
+                async analyzeSyncV1(requestData) {
+                    /**
+                     * 同步分析 - 一次性获取完整结果
+                     */
+                    const url = `${this.apiBaseUrl}/api/analyze`;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestData)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || `HTTP ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (!data.success) {
+                        throw new Error(data.message || '分析失败');
+                    }
+
+                    // 转换结果格式为与流式相同的结构
+                    this.results = data.data.reports;
+                    this.loadingMessage = '✨ 分析完成！';
+                },
                 async checkApiConnection() {
                     try {
                         const controller = new AbortController();
                         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
-                        
+
                         const response = await fetch(`${this.apiBaseUrl}/health`, {
                             method: 'GET',
                             headers: {
@@ -474,16 +632,16 @@
                             },
                             signal: controller.signal
                         });
-                        
+
                         clearTimeout(timeoutId);
-                        
+
                         if (!response.ok) {
                             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                         }
-                        
+
                         const data = await response.json();
                         console.log('API 健康状态:', data);
-                        
+
                         if (!data.mongodb_connected) {
                             ElMessage.warning('MongoDB 未连接，分析结果将不会保存');
                         } else {
@@ -492,7 +650,7 @@
                     } catch (err) {
                         console.error('API 连接失败:', err);
                         let errorMsg = '无法连接到 API 服务器';
-                        
+
                         if (err.name === 'AbortError' || err.name === 'TimeoutError') {
                             errorMsg = 'API 服务器连接超时，请检查后端服务是否已启动（端口 8000）';
                         } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
@@ -500,7 +658,7 @@
                         } else {
                             errorMsg = `连接错误: ${err.message}`;
                         }
-                        
+
                         ElMessage.error(errorMsg);
                         this.error = errorMsg;
                     }
@@ -513,6 +671,5 @@
         }).use(ElementPlus).mount('#app');
     </script>
 </body>
+
 </html>
-
-

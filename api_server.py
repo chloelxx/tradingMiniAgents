@@ -13,7 +13,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 # 导入核心模块
 from core.llm_client import DeepSeekClient
-from core.analyst import AnalystManager
+from core.analyst import AnalystManager, AnalystManagerStream
 from core.image_analyzer import ImageAnalyzer
 from data.stock_data import StockDataProvider
 from storage.mongodb import MongoDBStorage
@@ -61,6 +61,7 @@ app.add_middleware(
 llm_client = None
 data_provider = None
 analyst_manager = None
+analyst_manager_stream = None
 mongodb_storage = None
 image_analyzer = None
 
@@ -86,7 +87,7 @@ class AnalysisResponse(BaseModel):
 # 初始化组件
 def init_components():
     """初始化所有组件"""
-    global llm_client, data_provider, analyst_manager, mongodb_storage, image_analyzer
+    global llm_client, data_provider, analyst_manager, analyst_manager_stream, mongodb_storage, image_analyzer
     
     try:
         logger.info("📦 初始化组件...")
@@ -102,6 +103,10 @@ def init_components():
         # 分析师管理器
         analyst_manager = AnalystManager(llm_client, data_provider)
         logger.info("✅ 分析师管理器初始化完成")
+        
+        # 流式分析师管理器
+        analyst_manager_stream = AnalystManagerStream(llm_client, data_provider)
+        logger.info("✅ 流式分析师管理器初始化完成")
         
         # MongoDB 存储
         mongodb_storage = MongoDBStorage()
@@ -241,6 +246,104 @@ async def analyze_stock(request: AnalysisRequest):
     except Exception as e:
         logger.error(f"❌ 分析失败: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"分析失败: {str(e)}")
+
+
+@app.post("/api/analyze-stream")
+async def analyze_stock_stream(request: AnalysisRequest):
+    """
+    执行股票分析（流式版本）
+    
+    Args:
+        request: 分析请求
+        
+    Returns:
+        流式分析结果
+    """
+    try:
+        logger.info("=" * 60)
+        logger.info("🚀 收到流式分析请求")
+        logger.info(f"股票代码: {request.ticker}")
+        logger.info(f"分析日期: {request.date}")
+        logger.info(f"市场类型: {request.market}")
+        logger.info(f"分析师: {', '.join(request.analysts)}")
+        logger.info(f"研究深度: {request.research_depth}")
+        logger.info("=" * 60)
+        
+        # 验证请求
+        if not request.ticker:
+            raise HTTPException(status_code=400, detail="股票代码不能为空")
+        
+        if not request.date:
+            raise HTTPException(status_code=400, detail="分析日期不能为空")
+        
+        # 创建流式生成器
+        async def event_generator():
+            """生成 SSE 格式的流式数据"""
+            try:
+                import json
+                
+                # 发送开始信号
+                yield f"data: {json.dumps({'event': 'start', 'message': '分析开始'})}\n\n"
+                
+                # 获取分析流
+                full_content = {}  # 存储完整的分析内容
+                current_analyst = None
+                
+                async for chunk in analyst_manager_stream.analyze_stream(
+                    ticker=request.ticker,
+                    date=request.date,
+                    market=request.market,
+                    analysts=request.analysts
+                ):
+                    # 处理分析师标记
+                    if chunk.startswith("[ANALYST_START]"):
+                        current_analyst = chunk.replace("[ANALYST_START]", "").strip()
+                        full_content[current_analyst] = ""
+                        yield f"data: {json.dumps({'event': 'analyst_start', 'analyst': current_analyst})}\n\n"
+                    elif chunk.startswith("[ANALYST_END]"):
+                        current_analyst = chunk.replace("[ANALYST_END]", "").strip()
+                        yield f"data: {json.dumps({'event': 'analyst_end', 'analyst': current_analyst})}\n\n"
+                    else:
+                        # 普通内容块
+                        if current_analyst:
+                            full_content[current_analyst] += chunk
+                        
+                        # 发送内容块（使用 json.dumps 确保有效的 JSON）
+                        yield f"data: {json.dumps({'event': 'content', 'chunk': chunk})}\n\n"
+                
+                # 发送完成信号并准备保存
+                yield f"data: {json.dumps({'event': 'complete', 'message': '分析完成'})}\n\n"
+                
+                # 保存到 MongoDB（在流式完成后）
+                if mongodb_storage and mongodb_storage.connected:
+                    logger.info("💾 保存流式分析结果到 MongoDB...")
+                    mongodb_storage.save_analysis_report(
+                        stock_symbol=request.ticker,
+                        analysis_date=request.date,
+                        market=request.market,
+                        analysts=list(full_content.keys()),
+                        reports=full_content,
+                        research_depth=request.research_depth,
+                        image_analysis=None
+                    )
+                    logger.info("✅ 流式分析结果已保存到 MongoDB")
+                
+            except Exception as e:
+                logger.error(f"❌ 流式分析失败: {e}", exc_info=True)
+                import json
+                error_msg = json.dumps(str(e))
+                yield f"data: {{'event': 'error', 'message': {error_msg}}}\n\n"
+        
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ 流式分析请求处理失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"流式分析失败: {str(e)}")
 
 
 @app.get("/api/history")
