@@ -41,7 +41,7 @@ from storage.mongodb import MongoDBStorage
 # 创建 FastAPI 应用
 app = FastAPI(
     title="TradingMiniAgents API",
-    description="简化版股票分析智能体 API",
+    description="简单股票分析智能体 API",
     version="1.0.0"
 )
 
@@ -431,6 +431,11 @@ async def root():
         "frontend": "Frontend not found"
     }
 
+# 挂载静态文件目录
+app.mount("/static", StaticFiles(directory=frontend_dir / "static"), name="static")
+
+# 挂载图片目录
+app.mount('/images', StaticFiles(directory=frontend_dir / "images"), name="images")
 
 if __name__ == "__main__":
     import uvicorn

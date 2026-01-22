@@ -47,7 +47,8 @@ def start_backend():
 
 def main():
     """主函数"""
-    print("=" * 60)
+    # 启动服务的开始60个=号开始
+    print("=" * 60) 
     print("TradingMiniAgents - 启动服务")
     print("=" * 60)
     

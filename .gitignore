@@ -42,7 +42,7 @@ ENV/
 logs/
 
 # 数据文件
-data/
+# data/
 *.csv
 *.xlsx
 

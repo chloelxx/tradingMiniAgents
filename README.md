@@ -17,32 +17,51 @@
 - MongoDB 数据库
 - DeepSeek API Key
 
+## 创建虚拟环境（推荐）
+
+cd ./tradingMiniAgents
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
 ## 安装步骤
 
-1. 安装依赖：
-```bash
-pip install -r requirements.txt
-```
+1. **安装依赖**：
 
-2. 配置环境变量：
-创建 `.env` 文件，填入你的配置：
-- `DEEPSEEK_API_KEY`: DeepSeek API 密钥
-- `MONGODB_*`: MongoDB 连接配置
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-详细配置说明请查看 `CONFIG.md`
+2. **配置环境**：
+  详细配置说明请查看 `CONFIG.md`
+  配置环境变量：
+  创建 `.env` 文件，填入你的配置：
+
+   - `DEEPSEEK_API_KEY`: DeepSeek API 密钥
+   - `MONGODB_*`: MongoDB 连接配置
+
+3. **启动服务**：
+
+   ```bash
+   python start_server.py
+   ```
+
+4. **开始分析**：
+   - 在浏览器中打开 <http://localhost:8001>
+   - 填写股票信息并点击"开始分析"
 
 ## 使用方式
 
 ### 方式一：Web 界面（推荐）
 
 1. 启动服务：
+
 ```bash
 python start_server.py
 ```
 
-2. 浏览器会自动打开，或手动访问：http://localhost:8080
+1. 浏览器会自动打开，或手动访问：<http://localhost:8001>
 
-3. 在界面中：
+2. 在界面中：
    - 选择市场（A股/港股/美股）
    - 输入股票代码
    - 选择分析日期
@@ -53,7 +72,7 @@ python start_server.py
 ### 方式二：命令行
 
 ```bash
-python main.py --ticker 300748 --date 2026-01-16 --market A股
+python main.py --ticker 300748 --date 2026-01-21 --market A股
 ```
 
 #### 命令行参数
@@ -111,11 +130,12 @@ tradingMiniAgents/
 - `GET /api/history`: 获取分析历史
 - `GET /api/stock-info`: 获取股票信息
 
-详细 API 文档：启动服务后访问 http://localhost:8001/docs
+详细 API 文档：启动服务后访问 <http://localhost:8001/docs>
 
 ## 配置说明
 
 ### MongoDB 配置
+
 - `MONGODB_HOST`: MongoDB 主机地址
 - `MONGODB_PORT`: MongoDB 端口
 - `MONGODB_USERNAME`: 用户名
@@ -124,50 +144,36 @@ tradingMiniAgents/
 - `MONGODB_AUTH_SOURCE`: 认证源
 
 ### DeepSeek 配置
+
 - `DEEPSEEK_API_KEY`: API 密钥
-- `DEEPSEEK_BASE_URL`: API 地址（默认：https://api.deepseek.com）
+- `DEEPSEEK_BASE_URL`: API 地址（默认：<https://api.deepseek.com）>
 
 ### API 配置（可选）
+
 - `API_HOST`: API 服务器地址（默认：0.0.0.0）
 - `API_PORT`: API 服务器端口（默认：8001）
-
-## 快速开始
-
-1. **安装依赖**：
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **配置环境**：
-   - 复制 `.env.example` 为 `.env`
-   - 填入你的 DeepSeek API Key
-
-3. **启动服务**：
-   ```bash
-   python start_server.py
-   ```
-
-4. **开始分析**：
-   - 在浏览器中打开 http://localhost:8080
-   - 填写股票信息并点击"开始分析"
 
 ## 常见问题
 
 ### 1. DeepSeek API Key 错误
+
 - 检查 `.env` 文件中的 `DEEPSEEK_API_KEY` 是否正确
 - 确保 API Key 有效且有足够的余额
 
 ### 2. MongoDB 连接失败
+
 - 检查 MongoDB 服务是否运行
 - 验证用户名和密码是否正确
 - 检查端口是否正确（默认 27017）
 
 ### 3. 前端无法连接后端
+
 - 确保后端 API 服务器已启动（端口 8001）
 - 检查浏览器控制台是否有错误信息
 - 如果后端运行在不同端口，修改 `front/index.html` 中的 `apiBaseUrl`
 
 ### 4. 股票数据获取失败
+
 - 检查股票代码是否正确
 - 检查网络连接
 - 某些数据源可能有访问限制
